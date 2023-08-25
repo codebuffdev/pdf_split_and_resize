@@ -1,33 +1,32 @@
-import PyPDF2
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from io import BytesIO
+import fitz
+import os
 
 def split_and_resize_pdf(input_pdf_path, output_folder):
     # Open the PDF file
-    pdf_reader = PyPDF2.PdfReader(input_pdf_path)
+    pdf_document = fitz.open(input_pdf_path)
 
     # Iterate through each page
-    for page_num, pdf_page in enumerate(pdf_reader.pages):
-        # Create a new PDF canvas with A4 size
-        buffer = BytesIO()
-        pdf_canvas = canvas.Canvas(buffer, pagesize=letter)
+    for page_num in range(len(pdf_document)):
+        page = pdf_document[page_num]
 
-        # Add the page content from the original PDF
-        pdf_canvas.showPage()
-        pdf_canvas.save()
+        # Modify the media box to A4 size (595x842 points)
+        page.set_mediabox(fitz.Rect(0, 0, 595, 842))
+
+        # Create a new PDF with the modified page
+        new_pdf = fitz.open()
+        new_pdf.insert_pdf(pdf_document, from_page=page_num, to_page=page_num)
 
         # Save the A4-sized PDF page
-        buffer.seek(0)
-        output_pdf_path = f'{output_folder}/page_{page_num + 1}.pdf'
-        with open(output_pdf_path, 'wb') as output_pdf:
-            output_pdf.write(buffer.read())
-
-        # Close the buffer
-        buffer.close()
+        output_pdf_path = os.path.join(output_folder, f'page_{page_num + 1}.pdf')
+        new_pdf.save(output_pdf_path)
+        new_pdf.close()
 
 if __name__ == '__main__':
     input_pdf_path = '/workspaces/pdf_split_and_resize/Networking For Dummies.pdf'  # Replace with your input PDF file path
-    output_folder = '/workspaces/pdf_split_and_resize/NetworkingForDummiesSplits'      # Replace with your desired output folder
+    output_folder = '/workspaces/pdf_split_and_resize/NetworkingForDummiesSplits2'      # Replace with your desired output folder
+
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
     split_and_resize_pdf(input_pdf_path, output_folder)
+ 
